@@ -1,7 +1,9 @@
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage
+
+from handlers.reply_builder import build_schedule_message  # ← 追加
 
 app = Flask(__name__)
 
@@ -14,10 +16,7 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 @app.route("/callback", methods=['POST'])
 def callback():
-    # リクエストヘッダーから署名を取得
     signature = request.headers['X-Line-Signature']
-
-    # リクエストボディを取得
     body = request.get_data(as_text=True)
 
     try:
@@ -31,11 +30,11 @@ def callback():
 def handle_message(event):
     user_message = event.message.text
     print(f"受信メッセージ: {user_message}")
-    # 応答メッセージを送信
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=f"あなたのメッセージ: {user_message}")
-    )
+
+    # ユーザーのメッセージを解析して予定表をFlex Messageで返信
+    flex_msg = build_schedule_message(user_message)
+    line_bot_api.reply_message(event.reply_token, flex_msg)
 
 if __name__ == "__main__":
     app.run()
+
