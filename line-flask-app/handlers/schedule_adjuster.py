@@ -24,37 +24,33 @@ def parse_schedule_text(schedule_text):
             })
     return schedule
 
+
 def adjust_schedule(schedule, adjustment_text):
-    """
-    Adjusts the schedule based on an input like '勉強プラス10分'
-    """
     match = re.match(r'(.+?)プラス(\d+)分', adjustment_text.strip())
     if not match:
-        raise ValueError("調整形式が正しくありません。例：勉強プラス10分")
-    
+        raise ValueError("調整形式が正しくありません")
     target_task, extra_minutes = match.groups()
-    extra_delta = timedelta(minutes=int(extra_minutes))
-
+    extra_minutes = int(extra_minutes)
+    
     adjusted_schedule = []
-    shift = timedelta(0)
+    shift = timedelta(minutes=0)
     task_found = False
-
     for item in schedule:
         start = item["start"] + shift
         end = item["end"] + shift
-        task = item["task"]
-
-        if not task_found and task == target_task:
-            end += extra_delta
-            shift += extra_delta
+        if not task_found and item["task"] == target_task:
+            end += timedelta(minutes=extra_minutes)
+            shift += timedelta(minutes=extra_minutes)
             task_found = True
-
-        adjusted_schedule.append({
+        elif task_found:
+            start += timedelta(minutes=extra_minutes)
+            end += timedelta(minutes=extra_minutes)
+            adjusted_schedule.append({
             "start": start,
             "end": end,
-            "task": task
+            "task": item["task"]
         })
-
+    
     return adjusted_schedule
 
 def format_schedule(schedule):
