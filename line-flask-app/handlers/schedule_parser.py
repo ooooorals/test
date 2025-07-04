@@ -9,11 +9,15 @@ def normalize_numbers(text: str) -> str:
     return text.translate(trans_table)
 
 def parse_task(item: str):
-    match = re.match(r'(.+?)(?:(\d+)時間)?(?:(\d+)分)?$', item.strip())
+    item = normalize_numbers(item.strip())
+    match = re.match(r'(.+?)(?:(\d+)時間)?(?:(半)|(\d+)分)?$', item)
     if match:
         task = match.group(1).strip()
         hours = int(match.group(2)) if match.group(2) else 0
-        minutes = int(match.group(3)) if match.group(3) else 0
+        if match.group(3):  # '半' detected
+            minutes = 30
+        else:
+            minutes = int(match.group(4)) if match.group(4) else 0
         duration = timedelta(hours=hours, minutes=minutes)
         return task, duration
     else:
