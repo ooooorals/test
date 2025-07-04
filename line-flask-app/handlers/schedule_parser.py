@@ -19,16 +19,19 @@ def parse_task(item: str):
     else:
         raise ValueError(f"形式が正しくありません: {item}")
 
-def parse_schedule(text: str, break_minutes: int = 0) -> list:
+def split_parts(text: str):
     text = normalize_numbers(text)
-    parts = text.split('・')
+    # Split by either '・' or newline
+    return re.split(r'[・\n]+', text.strip())
+
+def parse_schedule(text: str, break_minutes: int = 0) -> list:
+    parts = split_parts(text)
 
     if "つなげる" in parts:
         connect_index = parts.index("つなげる")
         normal_parts = parts[:connect_index]
         post_connect_parts = parts[connect_index + 1:]
 
-        # 固定時間とそのタスクを探す
         fixed_time = None
         fixed_task = None
         fixed_duration = timedelta()
@@ -48,7 +51,6 @@ def parse_schedule(text: str, break_minutes: int = 0) -> list:
                 reverse_parts = post_connect_parts[:i]
                 break
 
-        # 通常スケジュール（開始時間から）
         start_time = parse_japanese_time(normal_parts[0])
         current_time = start_time
         normal_schedule = []
@@ -63,7 +65,6 @@ def parse_schedule(text: str, break_minutes: int = 0) -> list:
             })
             current_time = end_time
 
-        # 逆算スケジュール（固定時間の前）
         reverse_schedule = []
         current_time = fixed_time
         for item in reversed(reverse_parts):
@@ -77,7 +78,6 @@ def parse_schedule(text: str, break_minutes: int = 0) -> list:
             })
             current_time = start_time
 
-        # 固定予定
         fixed_schedule = []
         if fixed_task:
             end_time = fixed_time + fixed_duration
@@ -89,11 +89,8 @@ def parse_schedule(text: str, break_minutes: int = 0) -> list:
         else:
             current_time = fixed_time
 
-        # 通常スケジュール（固定時間以降）
         forward_schedule = []
         for item in forward_parts:
-            if item.strip() == "つなげる":
-                continue
             task, duration = parse_task(item)
             end_time = current_time + duration
             forward_schedule.append({
@@ -105,13 +102,10 @@ def parse_schedule(text: str, break_minutes: int = 0) -> list:
         return normal_schedule + reverse_schedule + fixed_schedule + forward_schedule
 
     else:
-        # 通常モードのみ
         start_time = parse_japanese_time(parts[0])
         current_time = start_time
         schedule = []
         for item in parts[1:]:
-            if item.strip() == "つなげる":
-                continue
             task, duration = parse_task(item)
             end_time = current_time + duration
             schedule.append({
