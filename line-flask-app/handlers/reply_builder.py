@@ -9,7 +9,7 @@ from handlers.schedule_adjuster import parse_schedule_text, adjust_schedule, for
 SCHEDULE_FILE = "previous_schedule.txt"
 
 def build_schedule_message(user_text: str) -> FlexSendMessage | TextSendMessage:
-    try:
+    try:
         # Check if the message is an adjustment command like "勉強プラス10分"
         match = re.match(r'(.+?)プラス(\d+)分', user_text.strip())
         if match and os.path.exists(SCHEDULE_FILE):
