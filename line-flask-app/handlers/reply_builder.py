@@ -10,7 +10,7 @@ SCHEDULE_FILE = "previous_schedule.txt"
 
 def build_schedule_message(user_text: str) -> FlexSendMessage | TextSendMessage:
     try:
-        # Check if the message is an adjustment command like "勉強プラス10分"
+        # Check if the message is an adjustment command like "勉強プラス10分"
         match = re.match(r'(.+?)プラス(\d+)分', user_text.strip())
         if match and os.path.exists(SCHEDULE_FILE):
             task_name = match.group(1).strip()
@@ -21,9 +21,7 @@ def build_schedule_message(user_text: str) -> FlexSendMessage | TextSendMessage:
             schedule = parse_schedule_text(previous_text)
             adjusted_schedule = adjust_schedule(schedule, task_name, extra_minutes)
             updated_text = format_schedule(adjusted_schedule)
-
-
-            # Save updated schedule
+            # Save updated schedule
             with open(SCHEDULE_FILE, 'w', encoding='utf-8') as f:
                 f.write(updated_text)
             return build_flex_message(adjusted_schedule)
