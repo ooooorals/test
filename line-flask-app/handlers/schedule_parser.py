@@ -8,20 +8,19 @@ def normalize_numbers(text: str) -> str:
     trans_table = str.maketrans(zenkaku_nums, hankaku_nums)
     return text.translate(trans_table)
 
-def parse_task(item: str):
-    item = normalize_numbers(item.strip())
-    match = re.match(r'(.+?)(?:(\d+)時間)?(?:(半)|(\d+)分)?$', item)
+def parse_japanese_time(time_str: str) -> datetime:
+    time_str = normalize_numbers(time_str.strip())
+    match = re.match(r'(\\d{1,2})時(?:(\\d{1,2})分)?(半)?', time_str)
     if match:
-        task = match.group(1).strip()
-        hours = int(match.group(2)) if match.group(2) else 0
-        if match.group(3):  # '半' detected
-            minutes = 30
-        else:
-            minutes = int(match.group(4)) if match.group(4) else 0
-        duration = timedelta(hours=hours, minutes=minutes)
-        return task, duration
+        hour = int(match.group(1))
+        minute = 0
+        if match.group(2):
+            minute = int(match.group(2))
+        elif match.group(3):  # '半'
+            minute = 30
+        return datetime.strptime(f"{hour:02d}:{minute:02d}", "%H:%M")
     else:
-        raise ValueError(f"形式が正しくありません: {item}")
+        raise ValueError(f"時間の形式が正しくありません: {time_str}")
 
 def split_parts(text: str):
     text = normalize_numbers(text)
