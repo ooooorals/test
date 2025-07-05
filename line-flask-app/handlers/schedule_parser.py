@@ -30,15 +30,33 @@ def split_parts(text: str):
 def parse_schedule(text: str, break_minutes: int = 0) -> list:
     parts = split_parts(text)
 
-    if "逆算" in parts:
-        reverse_index = parts.index("逆算")
-        before_parts = parts[:reverse_index]
-        after_parts = parts[reverse_index + 1:]
-        return parse_mixed_schedule(before_parts, after_parts)
-    else:
-        return parse_forward_schedule(parts)
+    # 「逆算」で分割して複数ブロックに対応
+    blocks = []
+    current_block = []
+    for part in parts:
+        if part == "逆算":
+            if current_block:
+                blocks.append(("forward", current_block))
+            current_block = []
+        else:
+            current_block.append(part)
+    if current_block:
+        # 最後のブロックが逆算かどうか判定
+        mode = "reverse" if any("時" in p for p in current_block) else "forward"
+        blocks.append((mode, current_block))
+
+    schedule = []
+    for mode, block in blocks:
+        if mode == "forward":
+            schedule += parse_forward_schedule(block)
+        elif mode == "reverse":
+            schedule += parse_reverse_schedule(block)
+
+    return schedule
 
 def parse_forward_schedule(parts: list) -> list:
+    if not parts:
+        return []
     start_time = parse_japanese_time(parts[0])
     current_time = start_time
     schedule = []
@@ -53,32 +71,15 @@ def parse_forward_schedule(parts: list) -> list:
         current_time = end_time
     return schedule
 
-def parse_mixed_schedule(before_parts: list, after_parts: list) -> list:
-    # 逆算部分の中で最初の時間を探す（基準時間）
-    base_index = next((i for i, p in enumerate(after_parts) if "時" in p), None)
+def parse_reverse_schedule(parts: list) -> list:
+    base_index = next((i for i, p in enumerate(parts) if "時" in p), None)
     if base_index is None:
         raise ValueError("逆算モードでは基準となる時間が必要です")
 
-    base_time = parse_japanese_time(after_parts[base_index])
-    reverse_tasks = after_parts[:base_index]
-    forward_tasks = after_parts[base_index + 1:]
+    base_time = parse_japanese_time(parts[base_index])
+    reverse_tasks = parts[:base_index]
+    forward_tasks = parts[base_index + 1:]
 
-    # 通常順スケジュール（before_parts）
-    forward_schedule = []
-    if before_parts:
-        start_time = parse_japanese_time(before_parts[0])
-        current_time = start_time
-        for item in before_parts[1:]:
-            task, duration = parse_task(item)
-            end_time = current_time + duration
-            forward_schedule.append({
-                "start": current_time,
-                "end": end_time,
-                "task": task
-            })
-            current_time = end_time
-
-    # 逆算スケジュール（reverse_tasks）
     reverse_schedule = []
     current_time = base_time
     for item in reversed(reverse_tasks):
@@ -91,17 +92,16 @@ def parse_mixed_schedule(before_parts: list, after_parts: list) -> list:
         })
         current_time = start_time
 
-    # 順方向スケジュール（forward_tasks）
+    forward_schedule = []
     current_time = base_time
-    forward_after_schedule = []
     for item in forward_tasks:
         task, duration = parse_task(item)
         end_time = current_time + duration
-        forward_after_schedule.append({
+        forward_schedule.append({
             "start": current_time,
             "end": end_time,
             "task": task
         })
         current_time = end_time
 
-    return forward_schedule + reverse_schedule + forward_after_schedule
+    return reverse_schedule + forward_schedule
