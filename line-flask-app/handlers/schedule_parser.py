@@ -33,24 +33,29 @@ def parse_schedule(text: str, break_minutes: int = 0) -> list:
     # 「逆算」で分割して複数ブロックに対応
     blocks = []
     current_block = []
+    current_mode = "forward"
+
     for part in parts:
         if part == "逆算":
             if current_block:
-                blocks.append(("forward", current_block))
+                blocks.append((current_mode, current_block))
             current_block = []
+            current_mode = "reverse"
         else:
             current_block.append(part)
+
     if current_block:
-        # 最後のブロックが逆算かどうか判定
-        mode = "reverse" if any("時" in p for p in current_block) else "forward"
-        blocks.append((mode, current_block))
+        blocks.append((current_mode, current_block))
 
     schedule = []
     for mode, block in blocks:
-        if mode == "forward":
-            schedule += parse_forward_schedule(block)
-        elif mode == "reverse":
-            schedule += parse_reverse_schedule(block)
+        try:
+            if mode == "forward":
+                schedule += parse_forward_schedule(block)
+            elif mode == "reverse":
+                schedule += parse_reverse_schedule(block)
+        except Exception as e:
+            raise ValueError(f"形式が正しくありません（{mode}ブロック）: {e}")
 
     return schedule
 
