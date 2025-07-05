@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import re
-from utils.time_utils import parse_japanese_time
 
 def normalize_numbers(text: str) -> str:
     zenkaku_nums = "０１２３４５６７８９"
@@ -23,14 +22,29 @@ def parse_task(item: str):
     else:
         raise ValueError(f"形式が正しくありません: {item}")
 
+def parse_japanese_time(time_str: str) -> datetime:
+    time_str = normalize_numbers(time_str.strip())
+    match = re.match(r'^(\d{1,2})時(?:(\d{1,2})分)?(半)?$', time_str)
+    if match:
+        hour = int(match.group(1))
+        minute = 0
+        if match.group(2):
+            minute = int(match.group(2))
+        elif match.group(3):  # '半'
+            minute = 30
+        return datetime.strptime(f"{hour:02d}:{minute:02d}", "%H:%M")
+    else:
+        raise ValueError(f"時間の形式が正しくありません: {time_str}")
+
 def split_parts(text: str):
     text = normalize_numbers(text)
-    return re.split(r'[・\n]+', text.strip())
+    parts = re.split(r'[・\n]+', text.strip())
+    return [p for p in parts if p.strip()]  # Remove empty strings
 
 def parse_schedule(text: str, break_minutes: int = 0) -> list:
     parts = split_parts(text)
 
-    # 「逆算」で分割して複数ブロックに対応
+    # Split into blocks by "逆算"
     blocks = []
     current_block = []
     current_mode = "forward"
@@ -77,7 +91,8 @@ def parse_forward_schedule(parts: list) -> list:
     return schedule
 
 def parse_reverse_schedule(parts: list) -> list:
-    base_index = next((i for i, p in enumerate(parts) if "時" in p), None)
+    # Match only valid time formats like "9時", "9時30分", "9時半"
+    base_index = next((i for i, p in enumerate(parts) if re.match(r'^\d{1,2}時((\d{1,2}分)?|半)?$', p.strip())), None)
     if base_index is None:
         raise ValueError("逆算モードでは基準となる時間が必要です")
 
