@@ -79,7 +79,7 @@ def build_schedule_message(user_text: str) -> FlexSendMessage | TextSendMessage:
             return build_flex_message(schedule_items, title=title)
 
     except Exception:
-        return TextSendMessage(text="形式が正しくありません。例：8時半\n勉強2時間\n料理３０分\n逆算\n準備１時間\n１４時お出かけ3時間")
+        return TextSendMessage(text="形式が正しくありません。例：8時半\n勉強2時間\n料理３０分\n逆算\n準備１時間\n１４時\nお出かけ3時間")
 
 def build_flex_message(schedule_items: list, title: str = "今日の予定") -> FlexSendMessage:
     contents = [
