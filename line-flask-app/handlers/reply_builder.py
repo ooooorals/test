@@ -1,3 +1,4 @@
+
 import os
 import re
 from datetime import datetime
@@ -13,7 +14,7 @@ def extract_date_and_body(text: str):
     first_line = lines[0].strip()
 
     # Match formats like 7/5 or 7月5日
-    match = re.match(r'(\d{1,2})月/日?', first_line)
+    match = re.match(r"(\d{1,2})[月/](\d{1,2})日?", first_line)
     if match:
         month, day = match.groups()
         title = f"{int(month)}月{int(day)}日の予定"
@@ -49,18 +50,18 @@ def build_schedule_message(user_text: str) -> FlexSendMessage | TextSendMessage:
             return build_flex_message(adjusted)
 
         # Handle direct adjustment like "勉強プラス10分"
-        match = re.match(r'(.+?)プラス(\d+)分', user_text.strip())
+        match = re.match(r"(.+?)プラス(\d+)分", user_text.strip())
         if match and os.path.exists(SCHEDULE_FILE):
             adjustment_text = user_text.strip()
 
-            with open(SCHEDULE_FILE, 'r', encoding='utf-8') as f:
+            with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
                 previous_text = f.read()
 
             schedule = parse_schedule_text(previous_text)
             adjusted_schedule = adjust_schedule(schedule, adjustment_text)
             updated_text = format_schedule(adjusted_schedule)
 
-            with open(SCHEDULE_FILE, 'w', encoding='utf-8') as f:
+            with open(SCHEDULE_FILE, "w", encoding="utf-8") as f:
                 f.write(updated_text)
 
             return build_flex_message(adjusted_schedule)
@@ -72,7 +73,7 @@ def build_schedule_message(user_text: str) -> FlexSendMessage | TextSendMessage:
 
             # Save to file
             schedule_text = format_schedule(schedule_items)
-            with open(SCHEDULE_FILE, 'w', encoding='utf-8') as f:
+            with open(SCHEDULE_FILE, "w", encoding="utf-8") as f:
                 f.write(schedule_text)
 
             return build_flex_message(schedule_items, title=title)
